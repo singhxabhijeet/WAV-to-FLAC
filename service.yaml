@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wav-to-flac-service
+spec:
+  type: LoadBalancer  # Change to NodePort if not using a cloud provider that supports LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: wav-to-flac

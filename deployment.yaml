@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wav-to-flac-app
+  labels:
+    app: wav-to-flac
+spec:
+  replicas: 3  # Set the number of replicas for scalability
+  selector:
+    matchLabels:
+      app: wav-to-flac
+  template:
+    metadata:
+      labels:
+        app: wav-to-flac
+    spec:
+      containers:
+      - name: wav-to-flac
+        image: wav-to-flac:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"

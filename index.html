@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAV to FLAC Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #444;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        audio {
+            margin-top: 20px;
+        }
+
+        a#downloadLink {
+            display: block;
+            margin-top: 15px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a#downloadLink:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WAV to FLAC Audio Converter</h1>
+        <input type="file" id="audioInput" accept=".wav">
+        <button id="convertButton">Convert to FLAC</button>
+        <audio id="flacAudio" controls></audio>
+        <a id="downloadLink" style="display:none;">Download FLAC</a>
+    </div>
+
+    <script>
+        const convertButton = document.getElementById('convertButton');
+        const audioInput = document.getElementById('audioInput');
+        const flacAudio = document.getElementById('flacAudio');
+        const downloadLink = document.getElementById('downloadLink');
+
+        convertButton.addEventListener('click', () => {
+            if (audioInput.files.length === 0) {
+                alert("Please select a WAV file first.");
+                return;
+            }
+
+            const file = audioInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const wavData = event.target.result;
+
+                // Establish WebSocket connection
+                const socket = new WebSocket('ws://localhost:8080/stream');
+
+                socket.binaryType = 'arraybuffer';
+
+                socket.onopen = function() {
+                    console.log("Connected to server");
+                    socket.send(wavData);
+                };
+
+                socket.onmessage = function(event) {
+                    console.log("Received FLAC data from server");
+
+                    // Create a Blob from the FLAC data
+                    const flacBlob = new Blob([event.data], { type: 'audio/flac' });
+
+                    // Create a URL for the Blob and set it as the source of the audio element
+                    flacAudio.src = URL.createObjectURL(flacBlob);
+                    flacAudio.play();
+
+                    // Create a download link for the FLAC file
+                    downloadLink.href = URL.createObjectURL(flacBlob);
+                    downloadLink.download = 'converted.flac';
+                    downloadLink.style.display = 'block';
+                    downloadLink.textContent = 'Download FLAC';
+                };
+
+                socket.onerror = function(error) {
+                    console.error("WebSocket error:", error);
+                };
+
+                socket.onclose = function(event) {
+                    console.log("Disconnected from server");
+                };
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
