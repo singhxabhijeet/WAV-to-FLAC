@@ -1,0 +1,76 @@
+name: Go CI/CD Pipeline
+
+# Trigger the workflow on push or pull request to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    # Define the environment where the job will run
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: [1.19, 1.20, 1.21.x]  # Test on multiple Go versions
+
+    steps:
+      # Step 1: Check out the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      # Step 3: Cache dependencies to speed up builds
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: go mod tidy
+
+      # Step 5: Build the application
+      - name: Build application
+        run: go build -v ./...
+
+      # Step 6: Run tests
+      - name: Run tests
+        run: go test -v ./...
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code again in deploy job
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment again for deployment (if needed)
+      - name: Set up Go for deployment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21.x'
+
+      # Step 3 (Optional): Deploy to Heroku, DigitalOcean, or any other platform.
+      # Example for Heroku deployment (assuming you have configured Heroku API key as a GitHub secret)
+      - name: Deploy to Heroku
+        run: |
+          git remote add heroku https://git.heroku.com/<your-app-name>.git
+          git push heroku main
+
